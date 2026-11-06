@@ -1,0 +1,196 @@
+/* ========== RESET ========== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Segoe UI", sans-serif;
+}
+
+body {
+    min-height: 100vh;
+    background:
+        radial-gradient(circle at top, #1e4fd9 0%, transparent 50%),
+        radial-gradient(circle at bottom, #0a6bff 0%, transparent 50%),
+        #0a0e1a;
+    color: white;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ========== HERO (más compacto) ========== */
+.hero {
+    text-align: center;
+    padding: 40px 20px 20px;   /* reducido */
+}
+
+.hero h1 {
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    font-weight: 900;
+}
+
+.hero span {
+    background: linear-gradient(90deg, #3b82f6, #60a5fa);
+    color: transparent;
+    background-clip: text;
+}
+
+.hero p {
+    margin-top: 12px;
+    color: #b0c4de;
+    font-size: 1rem;
+}
+
+/* ========== TEAM (espacio justo) ========== */
+.team {
+    padding: 20px 6% 30px;
+    flex: 1;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 18px;
+}
+
+/* ========== CARD (más pequeña) ========== */
+.card {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px);
+    border-radius: 20px;
+    padding: 18px;            /* reducido */
+    transition: 0.3s;
+    opacity: 0;
+    transform: translateY(30px);
+}
+
+.card.show {
+    opacity: 1;
+    transform: none;
+}
+
+.card:hover {
+    transform: translateY(-8px);
+    border-color: #3b82f6;
+}
+
+.avatar {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 2.2rem;
+    background: linear-gradient(135deg, #2563eb, #0ea5e9);
+    margin-bottom: 14px;
+}
+
+.card h2 {
+    font-size: 1.25rem;
+}
+
+.role {
+    color: #7aa9ff;
+    font-weight: 600;
+    margin: 4px 0 12px;
+    font-size: 0.9rem;
+}
+
+.text {
+    color: #c8d6e5;
+    line-height: 1.4;
+    font-size: 0.95rem;
+}
+
+/* ========== TAGS ========== */
+.tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 12px;
+}
+
+.tags span {
+    background: rgba(255, 255, 255, 0.08);
+    padding: 3px 8px;
+    border-radius: 16px;
+    font-size: 0.7rem;
+    color: #b0c4de;
+}
+
+/* ========== CONTACTO ========== */
+.contact {
+    margin-top: 14px;
+    display: flex;
+    gap: 10px;
+}
+
+.contact a {
+    color: white;
+    font-size: 1.1rem;
+    transition: 0.3s;
+}
+
+.contact a:hover {
+    color: #60a5fa;
+}
+
+/* ========== FOOTER CON VIDRIO AZULADO ========== */
+footer {
+    text-align: center;
+    padding: 10px 16px;
+    background: rgba(30, 58, 138, 0.25);
+    backdrop-filter: blur(8px) saturate(160%);
+    -webkit-backdrop-filter: blur(8px) saturate(160%);
+    border-top: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -4px 20px rgba(0, 50, 200, 0.15);
+    margin-top: 20px;
+    color: #b0c4de;
+    font-size: 0.9rem;
+}
+
+/* Opción fija (descomentar si se desea) */
+/*
+footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    border-radius: 16px 16px 0 0;
+}
+body {
+    padding-bottom: 60px;
+}
+*/
+
+/* ========== ENLACE CREADORES (con borde azul) ========== */
+.creador-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    color: #fff;
+    font-weight: 500;
+    padding: 4px 12px;
+    border-radius: 30px;
+    border: 1.5px solid rgba(59, 130, 246, 0.5);
+    background: transparent;
+    transition: all 0.25s ease;
+}
+
+.creador-link:hover {
+    border-color: #3b82f6;
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.4), inset 0 0 12px rgba(59, 130, 246, 0.1);
+    background: rgba(59, 130, 246, 0.08);
+    transform: scale(1.02);
+}
+
+.creador-link:hover i {
+    transform: scale(1.1) rotate(-3deg);
+}
+
+.creador-link:hover span {
+    text-shadow: 0 0 12px rgba(59, 130, 246, 0.5);
+}

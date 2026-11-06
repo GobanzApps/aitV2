@@ -1,0 +1,152 @@
+.box {
+    border-radius: 20px !important;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06), 0 2px 4px rgba(0, 0, 0, 0.02) !important;
+    transition: all 0.25s ease-in-out !important;
+    border: none !important;
+    background: #ffffff !important;
+    overflow: hidden !important;
+    margin-bottom: 24px !important;
+    }
+
+    .box:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.1), 0 4px 8px rgba(0, 0, 0, 0.02) !important;
+    }
+
+    /* Encabezados con color de fondo tenue y borde superior coloreado */
+    .box-header {
+    padding: 18px 22px !important;
+    border-bottom: 1px solid #f0f2f5 !important;
+    background: #fafcff !important;
+    position: relative;
+    border-top-left-radius: 20px !important;
+    border-top-right-radius: 20px !important;
+    }
+
+    /* Línea de acento de color según la clase */
+    .box-primary .box-header {
+    border-top: 4px solid #3c8dbc !important;
+    }
+    .box-warning .box-header {
+    border-top: 4px solid #f39c12 !important;
+    }
+    .box-success .box-header {
+    border-top: 4px solid #00a65a !important;
+    }
+    .box-danger .box-header {
+    border-top: 4px solid #dd4b39 !important;
+    }
+    .box-info .box-header {
+    border-top: 4px solid #00c0ef !important;
+    }
+    .box-solid .box-header {
+    background: #ffffff !important;
+    border-top: 4px solid #2c3e50 !important;
+    }
+
+    /* Títulos */
+    .box-header .box-title {
+    font-size: 1.2rem !important;
+    font-weight: 600 !important;
+    letter-spacing: -0.2px;
+    color: #1e2a3e !important;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    }
+
+    .box-header .box-title i {
+    font-size: 1.2rem;
+    color: inherit;
+    }
+
+    /* Cuerpo de la tarjeta */
+    .box-body {
+    padding: 22px !important;
+    background: #ffffff !important;
+    }
+
+    /* Tarjetas de igual altura */
+    .d-flex .box {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    margin-bottom: 0 !important;
+    }
+
+    .d-flex .box-body {
+    flex: 1;
+    }
+
+    /* Espaciado interno */
+    .box-body p {
+    margin-bottom: 14px;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: #2c3e50;
+    }   
+
+    .box-body strong {
+    display: inline-block;
+    margin-top: 12px;
+    margin-bottom: 4px;
+    font-weight: 600;
+    color: #1e4663;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    }
+
+    .box-body strong:first-of-type {
+    margin-top: 0;
+    }
+
+    /* Botones dentro de tarjetas */
+    .label, .btn-xs {
+    margin-top: 6px;
+    margin-right: 6px;
+    padding: 6px 10px;
+    border-radius: 30px;
+    font-size: 12px;
+    font-weight: 500;
+    margin-bottom: 10px;
+    }
+
+    /* Botón de colapso */
+    .btn-box-tool {
+    background: transparent;
+    border-radius: 30px;
+    padding: 5px 8px;
+    transition: 0.2s;
+    }
+    .btn-box-tool:hover {
+    background: rgba(0,0,0,0.05);
+    }
+
+    /* Responsive */
+    @media (max-width: 767px) {
+    .box {
+        border-radius: 16px !important;
+    }
+    .box-header {
+        padding: 14px 18px !important;
+    }
+    .box-body {
+        padding: 18px !important;
+    }
+    .d-flex {
+        gap: 0.75rem;
+    }
+    }
+    .box-primary .box-header {
+    background: #f0f9ff !important;
+    }
+    .box-warning .box-header {
+    background: #fff8e7 !important;
+    }
+    .box-success .box-header {
+    background: #edf7ed !important;
+    }
+    .box-tools .btn-box-tool {
+    display: none !important;
+    }

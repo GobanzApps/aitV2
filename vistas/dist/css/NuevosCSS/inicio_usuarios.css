@@ -1,0 +1,42 @@
+.usuario-card{
+
+    width:140px;
+    margin:10px;
+    display:inline-block;
+    vertical-align:top;
+    text-align:center;
+    cursor:pointer;
+    transition:.2s;
+
+}
+
+.usuario-card:hover{
+
+    transform:scale(1.05);
+
+}
+
+.usuario-card img{
+
+    width:80px;
+    height:80px;
+    border-radius:50%;
+    object-fit:cover;
+    border:3px solid #3c8dbc;
+
+}
+
+.usuario-card .nombre{
+
+    margin-top:8px;
+    font-weight:bold;
+
+}
+
+.usuario-card .cargo{
+
+    color:#777;
+    font-size:12px;
+
+}
+

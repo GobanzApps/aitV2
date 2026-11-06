@@ -1,0 +1,5 @@
+/vendor
+*sql*
+.zip
+.rar
+.7zip

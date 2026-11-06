@@ -1,0 +1,12 @@
+# .htaccess - PARA REFERENCIA (Nginx usa su propia configuración)
+Options All -Indexes
+
+RewriteEngine On
+RewriteBase /
+
+# Si el archivo o directorio existe, sírvelo directamente
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Redirigir todo lo demás a index.php con el parámetro ruta
+RewriteRule ^([-a-zA-Z0-9/]+)$ index.php?ruta=$1 [QSA,L]
