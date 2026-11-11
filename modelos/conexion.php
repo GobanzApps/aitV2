@@ -3,8 +3,8 @@
 class Conexion{
     static public function conectar(){
         $link = new PDO("mysql:host=localhost:3306;dbname=sait",
-                        "aitanz",
-                        "a94bjmed8lSVJ6RAGJIW");
+                        "root",
+                        "");
         $link->exec("set names utf8");
         $link->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         return $link;

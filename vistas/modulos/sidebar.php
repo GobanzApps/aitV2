@@ -35,6 +35,9 @@ if (!$sbAuth) {
 }
 
 $sbEsAdmin = in_array('administrador', $sbRoles, true);
+/* Reportes: Administrador | Coordinador | Archivo |
+   Centro de Atención | Usuario especial */
+$sbVerReportes = ControladorReportes::puedeVerReportes($sbAuth);
 
 /* Helpers locales sobre los datos cacheados */
 $sbCoordContiene = function (string $needle) use ($sbCoords): bool {
@@ -64,6 +67,13 @@ $sbVerTickets = $sbTieneRol([
 $sbVerActividad = $sbTieneRol([
     'Administrador', 'Coordinador', 'Especialista', 'Tecnico', 'Técnico'
 ]);
+
+/* Reportes: Admin | Coordinador | Coordinación 11 | Coordinación 9 | agamardo */
+$sbVerReportes = $sbEsAdmin
+              || $sbTieneRol(['Coordinador'])
+              || in_array(11, $sbAuth['coordsIds'] ?? [], true)
+              || in_array(9, $sbAuth['coordsIds'] ?? [], true)
+              || (($sbAuth['userData']['usuario'] ?? '') === 'agamardo');
 
 /* Users: Admin | Centro de Atención | Coordinador | Especialista */
 $sbVerUsers = $sbEsAdmin
@@ -212,12 +222,83 @@ $sbShowAjustes         = ($sbVerHostTipo || $sbVerDocTipo || $sbVerTipoEntidad);
                 </li>
                 <?php endif; ?>
 
+                <!-- <?php if ($sbVerReportes): ?>
+                <li class="nav-item">
+                    <a href="reportes" class="nav-link<?php echo sidebarActivo('reportes', $rutaActual); ?>">
+                        <i class="nav-icon fas fa-chart-bar"></i>
+                        <p>Reportes</p>
+                    </a>
+                </li>
+                <?php endif; ?> -->
+
                 <?php if ($sbVerActividad): ?>
                 <li class="nav-item">
                     <a href="actividad" class="nav-link<?php echo sidebarActivo('actividad', $rutaActual); ?>">
                         <i class="nav-icon fas fa-clipboard-list"></i>
                         <p>Actividad</p>
                     </a>
+                </li>
+                <?php endif; ?>
+
+                <?php if ($sbVerReportes): ?>
+                <li class="nav-item<?php echo in_array($rutaActual, [
+                    'reportesTicket',
+                    'reportesCoordinacion',
+                    'reportesUsuario',
+                    'reportesServicio',
+                    'reportesActividad'
+                ], true) ? ' menu-open' : ''; ?>">
+
+                    <a href="#" class="nav-link<?php echo sidebarActivo([
+                        'reportesTicket',
+                        'reportesCoordinacion',
+                        'reportesUsuario',
+                        'reportesServicio',
+                        'reportesActividad'
+                    ], $rutaActual); ?>">
+                        <i class="nav-icon fas fa-chart-bar"></i>
+                        <p>
+                            Reportes
+                            <i class="nav-arrow fas fa-angle-right"></i>
+                        </p>
+                    </a>
+
+                    <ul class="nav nav-treeview">
+                        <li class="nav-item">
+                            <a href="reportesTicket" class="nav-link<?php echo sidebarActivo('reportesTicket', $rutaActual); ?>">
+                                <i class="nav-icon far fa-circle"></i>
+                                <p>Tickets</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="reportesCoordinacion" class="nav-link<?php echo sidebarActivo('reportesCoordinacion', $rutaActual); ?>">
+                                <i class="nav-icon far fa-circle"></i>
+                                <p>Coordinación</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="reportesUsuario" class="nav-link<?php echo sidebarActivo('reportesUsuario', $rutaActual); ?>">
+                                <i class="nav-icon far fa-circle"></i>
+                                <p>Usuario</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="reportesServicio" class="nav-link<?php echo sidebarActivo('reportesServicio', $rutaActual); ?>">
+                                <i class="nav-icon far fa-circle"></i>
+                                <p>Servicios y items</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="reportesActividad" class="nav-link<?php echo sidebarActivo('reportesActividad', $rutaActual); ?>">
+                                <i class="nav-icon far fa-circle"></i>
+                                <p>Actividades</p>
+                            </a>
+                        </li>
+                    </ul>
                 </li>
                 <?php endif; ?>
 

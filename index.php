@@ -27,6 +27,7 @@ require_once "modelos/medio.modelo.php";
 require_once "modelos/prioridad.modelo.php";
 
 require_once "controladores/ticket.controlador.php";
+require_once "controladores/reportes.controlador.php";
 require_once "modelos/ticket.modelo.php";
 
 require_once "controladores/tuser.controlador.php";

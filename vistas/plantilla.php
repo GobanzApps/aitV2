@@ -249,7 +249,8 @@
                     if (isset($_GET["ruta"])) {
                         $rutas = ["inicio", "users", "user", "perfil", "salir", "coordinacion", "rol", "tag",
                                 "tipoEntidad", "host-tipo", "host", "hosts", "entidad", "medio", "prioridad",
-                                "status", "tickets", "ticket", "doc-tipo", "doc", "actividad", "tag-tipo"];
+                                "status", "tickets", "ticket", "doc-tipo", "doc", "actividad", "tag-tipo",
+                                "reportes", "reportesTicket", "reportesCoordinacion", "reportesUsuario", "reportesServicio", "reportesActividad"];
                         if (in_array($_GET["ruta"], $rutas)) {
                             include "vistas/modulos/" . $_GET["ruta"] . ".php";
                         }

@@ -406,8 +406,6 @@ function renderActividadFotos($fotoValue, $altText){
                             </td>
                         </tr>';
                     }
-                } else {
-                    echo '<tr><td colspan="10" class="text-center text-muted">No hay actividades registradas visibles para ti</td></tr>';
                 }
                 ?>
             </tbody>
