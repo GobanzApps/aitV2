@@ -87,6 +87,7 @@ $(document).ready(function () {
         var href = $(this).attr('href');
 
         if ($(this).attr('target') === '_blank') return;
+        if ($(this).attr('download') !== undefined) return;
         if ($(this).data('bs-toggle') || $(this).data('toggle')) return;
         if (
             href &&
