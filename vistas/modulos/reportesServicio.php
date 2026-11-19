@@ -78,15 +78,44 @@ foreach ($tcoordinacionesReporteServicio as $relacionReporte) {
     }
 }
 
-// Construir registros
+// Catálogos de servicios e ítems usando sus identificadores reales
+$catalogoServiciosReporte = [];
+foreach ($tiposReporteServicio as $tipoReporte) {
+    $catalogoServiciosReporte[(int)$tipoReporte['id']] = $tipoReporte['tag_tipo'];
+}
+
+$catalogoItemsReporte = [];
+$serviciosPorItemReporte = [];
+
+foreach ($tagsReporteServicio as $tagReporte) {
+
+    $idItemReporte = (int)$tagReporte['id'];
+    $catalogoItemsReporte[$idItemReporte] = $tagReporte['tag'];
+
+    $idsTiposReporte = json_decode($tagReporte['id_tag_tipo'] ?? '[]', true);
+
+    if (!is_array($idsTiposReporte)) {
+        $idsTiposReporte = is_numeric($tagReporte['id_tag_tipo'] ?? null)
+            ? [(int)$tagReporte['id_tag_tipo']]
+            : [];
+    }
+
+    $idsTiposReporte = array_values(array_unique(array_filter(
+        array_map('intval', $idsTiposReporte),
+        function ($id) use ($catalogoServiciosReporte) {
+            return $id > 0 && isset($catalogoServiciosReporte[$id]);
+        }
+    )));
+
+    $serviciosPorItemReporte[$idItemReporte] = $idsTiposReporte;
+}
+
+// Construir un registro por cada ítem asociado al ticket
 $registrosServiciosReporte = [];
 
 foreach ($tserviciosReporte as $registroServicioReporte) {
 
-    $idsTagsReporte = json_decode(
-        $registroServicioReporte['id_tag'] ?? '[]',
-        true
-    );
+    $idsTagsReporte = json_decode($registroServicioReporte['id_tag'] ?? '[]', true);
 
     if (!is_array($idsTagsReporte)) {
         $idsTagsReporte = is_numeric($registroServicioReporte['id_tag'] ?? null)
@@ -109,19 +138,14 @@ foreach ($tserviciosReporte as $registroServicioReporte) {
         ? date('d/m/Y H:i', $timestampReporte)
         : '—';
 
-    $coordinacionesRegistroReporte =
-        $coordinacionesPorTicketReporte[$idTicketReporte] ?? [];
+    $coordinacionesRegistroReporte = $coordinacionesPorTicketReporte[$idTicketReporte] ?? [];
 
     $nombresCoordinacionesReporte = !empty($coordinacionesRegistroReporte)
         ? implode(', ', array_unique(array_values($coordinacionesRegistroReporte)))
         : 'No asignada';
 
-    $idsCoordinacionesRegistroReporte = array_map(
-        'intval',
-        array_keys($coordinacionesRegistroReporte)
-    );
+    $idsCoordinacionesRegistroReporte = array_map('intval', array_keys($coordinacionesRegistroReporte));
 
-    // Un registro por cada tag asociado al servicio
     foreach ($idsTagsReporte as $idTagReporte) {
 
         $idTagReporte = (int)$idTagReporte;
@@ -131,41 +155,23 @@ foreach ($tserviciosReporte as $registroServicioReporte) {
         }
 
         $tagReporte = $mapaTagsReporte[$idTagReporte];
-
-        $nombreItemReporte = $tagReporte['tag'] ?? 'Sin ítem';
-
-        // Un tag puede estar relacionado con varios tipos
-        $idsTiposReporte = json_decode(
-            $tagReporte['id_tag_tipo'] ?? '[]',
-            true
-        );
-
-        if (!is_array($idsTiposReporte)) {
-            $idsTiposReporte = is_numeric($tagReporte['id_tag_tipo'] ?? null)
-                ? [(int)$tagReporte['id_tag_tipo']]
-                : [];
-        }
-
+        $idsTiposReporte = $serviciosPorItemReporte[$idTagReporte] ?? [];
         $nombresServiciosReporte = [];
 
         foreach ($idsTiposReporte as $idTipoReporte) {
-
-            $idTipoReporte = (int)$idTipoReporte;
-
-            if (isset($mapaTiposReporte[$idTipoReporte])) {
-                $nombresServiciosReporte[] =
-                    $mapaTiposReporte[$idTipoReporte]['tag_tipo'];
+            if (isset($catalogoServiciosReporte[$idTipoReporte])) {
+                $nombresServiciosReporte[] = $catalogoServiciosReporte[$idTipoReporte];
             }
         }
 
-        $nombreServicioReporte = !empty($nombresServiciosReporte)
-            ? implode(', ', array_unique($nombresServiciosReporte))
-            : 'Sin servicio';
-
         $registrosServiciosReporte[] = [
             'ticket' => $idTicketReporte,
-            'servicio' => $nombreServicioReporte,
-            'item' => $nombreItemReporte,
+            'servicio' => !empty($nombresServiciosReporte)
+                ? implode(', ', $nombresServiciosReporte)
+                : 'Sin servicio',
+            'servicios_ids' => $idsTiposReporte,
+            'item_id' => $idTagReporte,
+            'item' => $tagReporte['tag'] ?? 'Sin ítem',
             'coordinacion' => $nombresCoordinacionesReporte,
             'coordinaciones_ids' => $idsCoordinacionesRegistroReporte,
             'cantidad' => (float)($registroServicioReporte['cantidad'] ?? 0),
@@ -174,6 +180,7 @@ foreach ($tserviciosReporte as $registroServicioReporte) {
         ];
     }
 }
+
 ?>
 
 <div class="content-wrapper reporte-servicio">
@@ -305,6 +312,77 @@ foreach ($tserviciosReporte as $registroServicioReporte) {
                     </span>
                 </div>
 
+            </div>
+        </div>
+
+        <!-- SELECTORES DE SERVICIOS E ÍTEMS -->
+        <div class="card reporte-card selector-card mb-4">
+            <div class="card-header border-0">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="reporte-icon"><i class="fas fa-sliders-h"></i></span>
+                        <div>
+                            <h2 class="h5 mb-0 fw-semibold">Explorar servicios e ítems</h2>
+                            <small class="text-body-secondary">Selecciona una categoría para ver cómo se relaciona con la otra.</small>
+                        </div>
+                    </div>
+                    <span class="selector-ayuda"><i class="fas fa-mouse-pointer me-1"></i> Selección múltiple</span>
+                </div>
+            </div>
+
+            <div class="card-body pt-2">
+                <div class="row g-3">
+                    <div class="col-12 col-lg-5">
+                        <div class="selector-panel h-100">
+                            <div class="selector-panel-header">
+                                <div>
+                                    <div class="selector-titulo">Servicios</div>
+                                    <small class="text-body-secondary">Códigos de servicio</small>
+                                </div>
+                                <span class="selector-contador" id="contadorServiciosSeleccionados">0 seleccionados</span>
+                            </div>
+                            <div class="selector-lista-servicio selector-grid-servicios">
+                                <?php foreach ($catalogoServiciosReporte as $idServicioReporte => $nombreServicioReporte): ?>
+                                    <label class="selector-opcion-servicio selector-opcion-codigo">
+                                        <input type="checkbox" class="form-check-input filtro-servicio-checkbox" value="<?php echo (int)$idServicioReporte; ?>">
+                                        <span><?php echo htmlspecialchars($nombreServicioReporte, ENT_QUOTES, 'UTF-8'); ?></span>
+                                    </label>
+                                <?php endforeach; ?>
+                                <?php if (empty($catalogoServiciosReporte)): ?>
+                                    <div class="text-body-secondary small p-2">No hay servicios registrados.</div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-lg-7">
+                        <div class="selector-panel h-100">
+                            <div class="selector-panel-header">
+                                <div>
+                                    <div class="selector-titulo">Ítems</div>
+                                    <small class="text-body-secondary">Equipos, componentes y otros elementos</small>
+                                </div>
+                                <span class="selector-contador" id="contadorItemsSeleccionados">0 seleccionados</span>
+                            </div>
+                            <div class="selector-lista-servicio selector-grid-items">
+                                <?php foreach ($catalogoItemsReporte as $idItemReporte => $nombreItemReporte): ?>
+                                    <label class="selector-opcion-servicio selector-opcion-item">
+                                        <input type="checkbox" class="form-check-input filtro-item-checkbox" value="<?php echo (int)$idItemReporte; ?>">
+                                        <span><?php echo htmlspecialchars($nombreItemReporte, ENT_QUOTES, 'UTF-8'); ?></span>
+                                    </label>
+                                <?php endforeach; ?>
+                                <?php if (empty($catalogoItemsReporte)): ?>
+                                    <div class="text-body-secondary small p-2">No hay ítems registrados.</div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="selector-pie mt-3">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Los gráficos se actualizarán automáticamente. Puedes seleccionar varios servicios, varios ítems o combinar ambas opciones.
+                </div>
             </div>
         </div>
 
@@ -480,6 +558,8 @@ foreach ($tserviciosReporte as $registroServicioReporte) {
                                 <tr
                                     data-fecha="<?php echo htmlspecialchars($registroReporte['fecha_iso'], ENT_QUOTES, 'UTF-8'); ?>"
                                     data-coordinaciones="<?php echo htmlspecialchars(json_encode($registroReporte['coordinaciones_ids']), ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-servicios="<?php echo htmlspecialchars(json_encode($registroReporte['servicios_ids']), ENT_QUOTES, 'UTF-8'); ?>"
+                                    data-item="<?php echo (int)$registroReporte['item_id']; ?>"
                                     data-cantidad="<?php echo htmlspecialchars((string)$registroReporte['cantidad'], ENT_QUOTES, 'UTF-8'); ?>"
                                 >
 
@@ -702,6 +782,117 @@ foreach ($tserviciosReporte as $registroServicioReporte) {
     --bs-table-bg-type: rgba(255,255,255,.025);
 }
 
+
+.reporte-servicio .selector-panel {
+    border: 1px solid var(--rs-border);
+    border-radius: 12px;
+    padding: .9rem;
+    background: var(--bs-tertiary-bg, var(--bs-body-bg));
+}
+
+.reporte-servicio .selector-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: .75rem;
+    margin-bottom: .75rem;
+}
+
+.reporte-servicio .selector-titulo {
+    font-size: .95rem;
+    font-weight: 700;
+}
+
+.reporte-servicio .selector-contador {
+    flex: 0 0 auto;
+    border-radius: 20px;
+    padding: .25rem .6rem;
+    color: var(--bs-primary);
+    background: rgba(13,110,253,.10);
+    font-size: .72rem;
+    font-weight: 700;
+}
+
+.reporte-servicio .selector-ayuda {
+    color: var(--rs-muted);
+    font-size: .78rem;
+}
+
+.reporte-servicio .selector-lista-servicio {
+    max-height: 245px;
+    overflow-y: auto;
+    padding: .15rem;
+}
+
+.reporte-servicio .selector-grid-servicios {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+    gap: .5rem;
+}
+
+.reporte-servicio .selector-grid-items {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+    gap: .5rem;
+}
+
+.reporte-servicio .selector-opcion-servicio {
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    min-width: 0;
+    min-height: 42px;
+    margin: 0;
+    padding: .55rem .65rem;
+    border: 1px solid var(--rs-border);
+    border-radius: 9px;
+    background: var(--bs-body-bg);
+    cursor: pointer;
+    transition: border-color .15s ease, background .15s ease, box-shadow .15s ease;
+}
+
+.reporte-servicio .selector-opcion-servicio:hover {
+    border-color: rgba(13,110,253,.45);
+    background: rgba(13,110,253,.045);
+}
+
+.reporte-servicio .selector-opcion-servicio:has(.form-check-input:checked) {
+    border-color: var(--bs-primary);
+    background: rgba(13,110,253,.09);
+    box-shadow: inset 0 0 0 1px rgba(13,110,253,.12);
+}
+
+.reporte-servicio .selector-opcion-servicio .form-check-input {
+    margin: 0;
+    flex: 0 0 auto;
+    cursor: pointer;
+}
+
+.reporte-servicio .selector-opcion-servicio span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    line-height: 1.25;
+    font-size: .82rem;
+    font-weight: 600;
+}
+
+.reporte-servicio .selector-opcion-codigo {
+    justify-content: center;
+    min-height: 48px;
+    padding: .45rem .5rem;
+}
+
+.reporte-servicio .selector-opcion-codigo span {
+    font-size: .9rem;
+    letter-spacing: .5px;
+    font-weight: 800;
+}
+
+.reporte-servicio .selector-pie {
+    color: var(--rs-muted);
+    font-size: .8rem;
+}
+
 @media (max-width: 767.98px) {
     .reporte-servicio .card-body {
         padding: 1rem;
@@ -723,170 +914,25 @@ foreach ($tserviciosReporte as $registroServicioReporte) {
 document.addEventListener('DOMContentLoaded', function () {
 
     const $ = window.jQuery;
-
     if (!$ || !$.fn.DataTable) {
         console.error('No se pudo inicializar el reporte: jQuery o DataTables no están disponibles.');
         return;
     }
 
     const $tabla = $('#ticketsTableServicio');
-
     if (!$tabla.length) return;
+
+    const catalogoServicios = <?php echo json_encode($catalogoServiciosReporte, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+    const catalogoItems = <?php echo json_encode($catalogoItemsReporte, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 
     let fechaDesdeServicio = '';
     let fechaHastaServicio = '';
     let coordinacionSeleccionadaServicio = '';
+    const serviciosSeleccionados = new Set();
+    const itemsSeleccionados = new Set();
+
     let graficoServicio = null;
     let graficoItem = null;
-
-    // FILTRO PERSONALIZADO
-    $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
-
-        if (!settings.nTable || settings.nTable.id !== 'ticketsTableServicio') {
-            return true;
-        }
-
-        const fila = settings.aoData[dataIndex]?.nTr;
-
-        if (!fila) return true;
-
-        const fecha = (fila.getAttribute('data-fecha') || '').substring(0, 10);
-
-        if (fechaDesdeServicio && (!fecha || fecha < fechaDesdeServicio)) {
-            return false;
-        }
-
-        if (fechaHastaServicio && (!fecha || fecha > fechaHastaServicio)) {
-            return false;
-        }
-
-        if (coordinacionSeleccionadaServicio) {
-
-            let idsCoordinaciones = [];
-
-            try {
-                idsCoordinaciones = JSON.parse(
-                    fila.getAttribute('data-coordinaciones') || '[]'
-                );
-            } catch (error) {
-                idsCoordinaciones = [];
-            }
-
-            if (!idsCoordinaciones.includes(Number(coordinacionSeleccionadaServicio))) {
-                return false;
-            }
-        }
-
-        return true;
-    });
-
-    // DATATABLE
-    const tablaServicio = $tabla.DataTable({
-
-        responsive: true,
-        retrieve: true,
-        order: [[6, 'desc']],
-        pageLength: 25,
-
-        lengthMenu: [
-            [5, 10, 25, 50, -1],
-            [5, 10, 25, 50, 'Todos']
-        ],
-
-        language: {
-            url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json',
-            search: 'Buscar:',
-            lengthMenu: 'Mostrar _MENU_ registros',
-            info: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
-            infoEmpty: 'No hay registros disponibles',
-            zeroRecords: 'No se encontraron registros',
-            paginate: {
-                first: 'Primero',
-                last: 'Último',
-                next: 'Siguiente',
-                previous: 'Anterior'
-            }
-        },
-
-        drawCallback: function () {
-            actualizarContadoresServicio();
-            actualizarGraficosServicio();
-        }
-
-    });
-
-    // OBTENER FILAS
-    function obtenerFilasServicio(soloFiltrados) {
-
-        const filas = [];
-
-        const selector = soloFiltrados
-            ? { search: 'applied' }
-            : {};
-
-        tablaServicio.rows(selector).every(function () {
-
-            const nodo = this.node();
-            const celdas = this.data();
-
-            filas.push({
-                ticket: $('<div>').html(celdas[1]).text().trim(),
-                servicio: $('<div>').html(celdas[2]).text().trim(),
-                coordinacion: $('<div>').html(celdas[3]).text().trim(),
-                item: $('<div>').html(celdas[4]).text().trim(),
-                cantidad: parseFloat(nodo.getAttribute('data-cantidad')) || 0,
-                fecha: $('<div>').html(celdas[6]).text().trim()
-            });
-
-        });
-
-        return filas;
-    }
-
-    // CONTADORES
-    function actualizarContadoresServicio() {
-
-        const filas = obtenerFilasServicio(true);
-
-        const tickets = new Set();
-
-        let suma = 0;
-
-        filas.forEach(fila => {
-
-            if (fila.ticket) {
-                tickets.add(fila.ticket);
-            }
-
-            suma += fila.cantidad;
-
-        });
-
-        $('#totalRegistrosServicio').text(tablaServicio.rows().count());
-        $('#visibleRegistrosServicio').text(filas.length);
-        $('#ticketsUnicosServicio').text(tickets.size);
-        $('#sumaCantidadesServicio').text(suma.toLocaleString('es-VE'));
-    }
-
-    // DATOS PARA LOS GRÁFICOS
-    function obtenerDistribucionServicio(tipo) {
-
-        const resultado = {};
-
-        obtenerFilasServicio(true).forEach(fila => {
-
-            const nombre = tipo === 'servicio'
-                ? fila.servicio
-                : fila.item;
-
-            const etiqueta = nombre || 'Sin identificar';
-
-            resultado[etiqueta] = (resultado[etiqueta] || 0) + fila.cantidad;
-
-        });
-
-        return resultado;
-    }
 
     const paletaServicio = [
         '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
@@ -895,61 +941,172 @@ document.addEventListener('DOMContentLoaded', function () {
         '#ADFF2F', '#FF69B4', '#CD5C5C', '#20B2AA'
     ];
 
-    function crearGraficoServicio(canvasId, emptyId, datos, tipo) {
+    function leerIdsJSON(valor) {
+        try {
+            const datos = JSON.parse(valor || '[]');
+            if (Array.isArray(datos)) return datos.map(Number).filter(Number.isFinite);
+            if (Number.isFinite(Number(datos))) return [Number(datos)];
+        } catch (error) {
+            if (valor && Number.isFinite(Number(valor))) return [Number(valor)];
+        }
+        return [];
+    }
 
+    // FILTROS PERSONALIZADOS DE DATATABLE
+    $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
+
+        if (!settings.nTable || settings.nTable.id !== 'ticketsTableServicio') return true;
+
+        const fila = settings.aoData[dataIndex]?.nTr;
+        if (!fila) return true;
+
+        const fecha = (fila.getAttribute('data-fecha') || '').substring(0, 10);
+
+        if (fechaDesdeServicio && (!fecha || fecha < fechaDesdeServicio)) return false;
+        if (fechaHastaServicio && (!fecha || fecha > fechaHastaServicio)) return false;
+
+        if (coordinacionSeleccionadaServicio) {
+            const idsCoordinaciones = leerIdsJSON(fila.getAttribute('data-coordinaciones'));
+            if (!idsCoordinaciones.includes(Number(coordinacionSeleccionadaServicio))) return false;
+        }
+
+        if (serviciosSeleccionados.size > 0) {
+            const idsServicios = leerIdsJSON(fila.getAttribute('data-servicios'));
+            if (!idsServicios.some(id => serviciosSeleccionados.has(id))) return false;
+        }
+
+        if (itemsSeleccionados.size > 0) {
+            const idItem = Number(fila.getAttribute('data-item'));
+            if (!itemsSeleccionados.has(idItem)) return false;
+        }
+
+        return true;
+    });
+
+    const tablaServicio = $tabla.DataTable({
+        responsive: true,
+        retrieve: true,
+        order: [[6, 'desc']],
+        pageLength: 25,
+        lengthMenu: [[5, 10, 25, 50, -1], [5, 10, 25, 50, 'Todos']],
+        language: {
+            url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json',
+            search: 'Buscar:',
+            lengthMenu: 'Mostrar _MENU_ registros',
+            info: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
+            infoEmpty: 'No hay registros disponibles',
+            zeroRecords: 'No se encontraron registros',
+            paginate: { first: 'Primero', last: 'Último', next: 'Siguiente', previous: 'Anterior' }
+        },
+        drawCallback: function () {
+            actualizarContadoresServicio();
+            actualizarGraficosServicio();
+        }
+    });
+
+    function obtenerFilasServicio(soloFiltrados) {
+        const filas = [];
+        const selector = soloFiltrados ? { search: 'applied' } : {};
+
+        tablaServicio.rows(selector).every(function () {
+            const nodo = this.node();
+            const celdas = this.data();
+
+            filas.push({
+                ticket: $('<div>').html(celdas[1]).text().trim(),
+                servicio: $('<div>').html(celdas[2]).text().trim(),
+                servicios_ids: leerIdsJSON(nodo.getAttribute('data-servicios')),
+                coordinacion: $('<div>').html(celdas[3]).text().trim(),
+                item: $('<div>').html(celdas[4]).text().trim(),
+                item_id: Number(nodo.getAttribute('data-item')),
+                cantidad: parseFloat(nodo.getAttribute('data-cantidad')) || 0,
+                fecha: $('<div>').html(celdas[6]).text().trim()
+            });
+        });
+
+        return filas;
+    }
+
+    function actualizarContadoresServicio() {
+        const filas = obtenerFilasServicio(true);
+        const tickets = new Set();
+        let suma = 0;
+
+        filas.forEach(fila => {
+            if (fila.ticket) tickets.add(fila.ticket);
+            suma += fila.cantidad;
+        });
+
+        $('#totalRegistrosServicio').text(tablaServicio.rows().count());
+        $('#visibleRegistrosServicio').text(filas.length);
+        $('#ticketsUnicosServicio').text(tickets.size);
+        $('#sumaCantidadesServicio').text(suma.toLocaleString('es-VE'));
+        $('#contadorServiciosSeleccionados').text(serviciosSeleccionados.size + ' seleccionados');
+        $('#contadorItemsSeleccionados').text(itemsSeleccionados.size + ' seleccionados');
+    }
+
+    function obtenerDistribucionServicio(tipo) {
+        const resultado = {};
+
+        obtenerFilasServicio(true).forEach(fila => {
+            if (tipo === 'servicio') {
+                fila.servicios_ids.forEach(idServicio => {
+                    if (serviciosSeleccionados.size > 0 && !serviciosSeleccionados.has(idServicio)) return;
+                    const nombre = catalogoServicios[idServicio] || catalogoServicios[String(idServicio)];
+                    if (!nombre) return;
+                    resultado[nombre] = (resultado[nombre] || 0) + fila.cantidad;
+                });
+            } else {
+                const idItem = fila.item_id;
+                if (itemsSeleccionados.size > 0 && !itemsSeleccionados.has(idItem)) return;
+                const nombre = catalogoItems[idItem] || catalogoItems[String(idItem)];
+                if (!nombre) return;
+                resultado[nombre] = (resultado[nombre] || 0) + fila.cantidad;
+            }
+        });
+
+        return resultado;
+    }
+
+    function crearGraficoServicio(canvasId, emptyId, datos) {
         const canvas = document.getElementById(canvasId);
         const empty = document.getElementById(emptyId);
-
-        if (!canvas || !empty || typeof Chart === 'undefined') {
-            return null;
-        }
+        if (!canvas || !empty || typeof Chart === 'undefined') return null;
 
         const etiquetas = Object.keys(datos);
         const valores = Object.values(datos);
 
         if (!etiquetas.length) {
-
             canvas.classList.add('d-none');
             empty.classList.remove('d-none');
-
+            empty.textContent = 'No hay datos relacionados con la selección actual.';
             return null;
         }
 
         canvas.classList.remove('d-none');
         empty.classList.add('d-none');
 
-        const temaOscuro =
-            document.documentElement.getAttribute('data-bs-theme') === 'dark';
+        const temaOscuro = document.documentElement.getAttribute('data-bs-theme') === 'dark';
 
         return new Chart(canvas, {
-
             type: 'doughnut',
-
             data: {
                 labels: etiquetas,
-
                 datasets: [{
                     data: valores,
-                    backgroundColor: etiquetas.map((_, i) =>
-                        paletaServicio[i % paletaServicio.length]
-                    ),
+                    backgroundColor: etiquetas.map((_, i) => paletaServicio[i % paletaServicio.length]),
                     borderColor: temaOscuro ? '#212529' : '#ffffff',
                     borderWidth: 2,
                     hoverOffset: 7
                 }]
             },
-
             options: {
-
                 responsive: true,
                 maintainAspectRatio: false,
                 cutout: '55%',
-
                 plugins: {
-
                     legend: {
                         position: 'bottom',
-
                         labels: {
                             color: temaOscuro ? '#dee2e6' : '#495057',
                             padding: 15,
@@ -957,258 +1114,178 @@ document.addEventListener('DOMContentLoaded', function () {
                             pointStyle: 'circle'
                         }
                     },
-
                     tooltip: {
-
                         callbacks: {
-
                             label: function (context) {
-
-                                const total = context.dataset.data.reduce(
-                                    (a, b) => a + b,
-                                    0
-                                );
-
-                                const porcentaje = total
-                                    ? ((context.raw / total) * 100).toFixed(1)
-                                    : '0.0';
-
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const porcentaje = total ? ((context.raw / total) * 100).toFixed(1) : '0.0';
                                 return ` ${context.label}: ${context.raw} (${porcentaje}%)`;
                             }
-
                         }
-
                     }
-
                 }
-
             }
-
         });
-
     }
 
-    // ACTUALIZAR GRÁFICOS
     function actualizarGraficosServicio() {
-
         if (graficoServicio) {
             graficoServicio.destroy();
             graficoServicio = null;
         }
-
         if (graficoItem) {
             graficoItem.destroy();
             graficoItem = null;
         }
 
-        graficoServicio = crearGraficoServicio(
-            'servicioChart',
-            'servicioChartEmpty',
-            obtenerDistribucionServicio('servicio'),
-            'servicio'
-        );
+        const haySeleccion = serviciosSeleccionados.size > 0 || itemsSeleccionados.size > 0;
 
+        if (!haySeleccion) {
+            $('#servicioChart, #itemChart').addClass('d-none');
+            $('#servicioChartEmpty, #itemChartEmpty')
+                .removeClass('d-none')
+                .text('Selecciona uno o más servicios o ítems para consultar su distribución.');
+            return;
+        }
+
+        graficoServicio = crearGraficoServicio(
+            'servicioChart', 'servicioChartEmpty', obtenerDistribucionServicio('servicio')
+        );
         graficoItem = crearGraficoServicio(
-            'itemChart',
-            'itemChartEmpty',
-            obtenerDistribucionServicio('item'),
-            'item'
+            'itemChart', 'itemChartEmpty', obtenerDistribucionServicio('item')
         );
     }
 
-    // ETIQUETA DE FILTROS
     function actualizarEtiquetaFiltrosServicio() {
-
         const filtros = [];
 
         if (fechaDesdeServicio || fechaHastaServicio) {
-
-            const desde = fechaDesdeServicio
-                ? fechaDesdeServicio.split('-').reverse().join('/')
-                : 'Inicio';
-
-            const hasta = fechaHastaServicio
-                ? fechaHastaServicio.split('-').reverse().join('/')
-                : 'Fin';
-
+            const desde = fechaDesdeServicio ? fechaDesdeServicio.split('-').reverse().join('/') : 'Inicio';
+            const hasta = fechaHastaServicio ? fechaHastaServicio.split('-').reverse().join('/') : 'Fin';
             filtros.push(`Fecha: ${desde} - ${hasta}`);
         }
 
         if (coordinacionSeleccionadaServicio) {
+            filtros.push('Coordinación: ' + $('#coordinacionFilterServicio option:selected').text());
+        }
 
-            const nombre = $('#coordinacionFilterServicio option:selected').text();
+        if (serviciosSeleccionados.size) {
+            const nombres = [...serviciosSeleccionados].map(id => catalogoServicios[id] || catalogoServicios[String(id)]).filter(Boolean);
+            filtros.push('Servicios: ' + nombres.join(', '));
+        }
 
-            filtros.push(`Coordinación: ${nombre}`);
+        if (itemsSeleccionados.size) {
+            const nombres = [...itemsSeleccionados].map(id => catalogoItems[id] || catalogoItems[String(id)]).filter(Boolean);
+            filtros.push('Ítems: ' + nombres.join(', '));
         }
 
         const $badge = $('#activeFiltersServicio');
-
         if (!filtros.length) {
-
-            $badge
-                .removeClass('text-bg-primary')
-                .addClass('text-bg-secondary')
-                .text('Sin filtros activos');
-
+            $badge.removeClass('text-bg-primary').addClass('text-bg-secondary').text('Sin filtros activos');
         } else {
-
-            $badge
-                .removeClass('text-bg-secondary')
-                .addClass('text-bg-primary')
-                .text(filtros.join(' | '));
-
+            $badge.removeClass('text-bg-secondary').addClass('text-bg-primary').text(filtros.join(' | '));
         }
     }
 
-    // APLICAR FILTROS
     function aplicarFiltrosServicio() {
-
-        if (
-            fechaDesdeServicio &&
-            fechaHastaServicio &&
-            fechaDesdeServicio > fechaHastaServicio
-        ) {
-
+        if (fechaDesdeServicio && fechaHastaServicio && fechaDesdeServicio > fechaHastaServicio) {
             const temporal = fechaDesdeServicio;
-
             fechaDesdeServicio = fechaHastaServicio;
             fechaHastaServicio = temporal;
-
             $('#fechaDesdeServicio').val(fechaDesdeServicio);
             $('#fechaHastaServicio').val(fechaHastaServicio);
         }
-
         tablaServicio.draw();
         actualizarEtiquetaFiltrosServicio();
     }
 
-    // CAMBIO DE FECHAS
     $('#fechaDesdeServicio, #fechaHastaServicio').on('change input', function () {
-
         fechaDesdeServicio = $('#fechaDesdeServicio').val() || '';
         fechaHastaServicio = $('#fechaHastaServicio').val() || '';
-
         aplicarFiltrosServicio();
     });
 
-    // CAMBIO DE COORDINACIÓN
     $('#coordinacionFilterServicio').on('change', function () {
-
         coordinacionSeleccionadaServicio = $(this).val() || '';
-
         aplicarFiltrosServicio();
     });
 
-    // LIMPIAR FILTROS
-    $('#clearFiltersServicio').on('click', function () {
+    $('.filtro-servicio-checkbox').on('change', function () {
+        const id = Number(this.value);
+        if (this.checked) serviciosSeleccionados.add(id);
+        else serviciosSeleccionados.delete(id);
+        aplicarFiltrosServicio();
+    });
 
+    $('.filtro-item-checkbox').on('change', function () {
+        const id = Number(this.value);
+        if (this.checked) itemsSeleccionados.add(id);
+        else itemsSeleccionados.delete(id);
+        aplicarFiltrosServicio();
+    });
+
+    $('#clearFiltersServicio').on('click', function () {
         $('#fechaDesdeServicio, #fechaHastaServicio').val('');
         $('#coordinacionFilterServicio').val('');
+        $('.filtro-servicio-checkbox, .filtro-item-checkbox').prop('checked', false);
 
         fechaDesdeServicio = '';
         fechaHastaServicio = '';
         coordinacionSeleccionadaServicio = '';
+        serviciosSeleccionados.clear();
+        itemsSeleccionados.clear();
 
         aplicarFiltrosServicio();
     });
 
-    // EXPORTAR EXCEL
     function exportarExcelServicio(soloFiltrados) {
-
         const filas = obtenerFilasServicio(soloFiltrados);
 
         if (!filas.length) {
-
             if (window.Swal) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Sin datos',
-                    text: 'No hay registros para exportar.'
-                });
+                Swal.fire({ icon: 'warning', title: 'Sin datos', text: 'No hay registros para exportar.' });
             } else {
                 alert('No hay registros para exportar.');
             }
-
             return;
         }
 
-        const datos = [
-            ['#', 'Ticket', 'Servicio', 'Coordinación', 'Ítem', 'Cantidad', 'Fecha']
-        ];
-
+        const datos = [['#', 'Ticket', 'Servicio', 'Coordinación', 'Ítem', 'Cantidad', 'Fecha']];
         filas.forEach((fila, index) => {
-
-            datos.push([
-                index + 1,
-                fila.ticket,
-                fila.servicio,
-                fila.coordinacion,
-                fila.item,
-                fila.cantidad,
-                fila.fecha
-            ]);
-
+            datos.push([index + 1, fila.ticket, fila.servicio, fila.coordinacion, fila.item, fila.cantidad, fila.fecha]);
         });
 
         const libro = XLSX.utils.book_new();
         const hoja = XLSX.utils.aoa_to_sheet(datos);
-
         hoja['!cols'] = [
-            { wch: 8 },
-            { wch: 15 },
-            { wch: 30 },
-            { wch: 30 },
-            { wch: 30 },
-            { wch: 12 },
-            { wch: 22 }
+            { wch: 8 }, { wch: 15 }, { wch: 30 }, { wch: 30 },
+            { wch: 30 }, { wch: 12 }, { wch: 22 }
         ];
-
-        XLSX.utils.book_append_sheet(
-            libro,
-            hoja,
-            'Tickets por Servicios'
-        );
+        XLSX.utils.book_append_sheet(libro, hoja, 'Tickets por Servicios');
 
         const ahora = new Date();
+        const marcaTiempo = ahora.getFullYear()
+            + String(ahora.getMonth() + 1).padStart(2, '0')
+            + String(ahora.getDate()).padStart(2, '0') + '_'
+            + String(ahora.getHours()).padStart(2, '0')
+            + String(ahora.getMinutes()).padStart(2, '0');
 
-        const marcaTiempo =
-            ahora.getFullYear() +
-            String(ahora.getMonth() + 1).padStart(2, '0') +
-            String(ahora.getDate()).padStart(2, '0') +
-            '_' +
-            String(ahora.getHours()).padStart(2, '0') +
-            String(ahora.getMinutes()).padStart(2, '0');
-
-        XLSX.writeFile(
-            libro,
-            (soloFiltrados ? 'reporte_servicios_' : 'todos_servicios_') +
-            marcaTiempo +
-            '.xlsx'
-        );
+        XLSX.writeFile(libro, (soloFiltrados ? 'reporte_servicios_' : 'todos_servicios_') + marcaTiempo + '.xlsx');
 
         if (window.Swal) {
             Swal.fire({
-                icon: 'success',
-                title: 'Exportación exitosa',
+                icon: 'success', title: 'Exportación exitosa',
                 text: `Se exportaron ${filas.length} registros.`,
-                timer: 1800,
-                showConfirmButton: false
+                timer: 1800, showConfirmButton: false
             });
         }
     }
 
-    $('#exportExcelServicio').on('click', function () {
-        exportarExcelServicio(true);
-    });
+    $('#exportExcelServicio').on('click', function () { exportarExcelServicio(true); });
+    $('#exportAllExcelServicio').on('click', function () { exportarExcelServicio(false); });
 
-    $('#exportAllExcelServicio').on('click', function () {
-        exportarExcelServicio(false);
-    });
-
-    // INICIALIZACIÓN
     actualizarContadoresServicio();
     actualizarGraficosServicio();
     actualizarEtiquetaFiltrosServicio();
-
 });
 </script>
