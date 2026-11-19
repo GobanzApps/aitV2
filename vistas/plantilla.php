@@ -247,12 +247,28 @@
                 <div class="container-fluid">
                     <?php
                     if (isset($_GET["ruta"])) {
-                        $rutas = ["inicio", "users", "user", "perfil", "salir", "coordinacion", "rol", "tag",
-                                "tipoEntidad", "host-tipo", "host", "hosts", "entidad", "medio", "prioridad",
-                                "status", "tickets", "ticket", "doc-tipo", "doc", "actividad", "tag-tipo",
-                                "reportes", "reportesTicket", "reportesCoordinacion", "reportesUsuario", "reportesServicio", "reportesActividad"];
-                        if (in_array($_GET["ruta"], $rutas)) {
-                            include "vistas/modulos/" . $_GET["ruta"] . ".php";
+
+                        $rutas = [
+                            "inicio", "users", "user", "perfil", "salir", "coordinacion", "rol", "tag", "tipoEntidad",
+                            "host-tipo", "host", "hosts", "entidad", "medio", "prioridad", "status", "tickets", "ticket",
+                            "doc-tipo", "doc", "actividad", "tag-tipo",
+                            "reportes", "reportesTicket", "reportesCoordinacion", "reportesUsuario", "reportesServicio", "reportesActividad"
+                        ];
+
+                        // Módulos que ahora están dentro de la carpeta reportes
+                        $rutasReportes = [
+                            "reportes", "reportesTicket", "reportesCoordinacion",
+                            "reportesUsuario", "reportesServicio", "reportesActividad"
+                        ];
+
+                        $rutaSolicitada = $_GET["ruta"];
+
+                        if (in_array($rutaSolicitada, $rutas, true)) {
+                            if (in_array($rutaSolicitada, $rutasReportes, true)) {
+                                include "vistas/modulos/reportes/" . $rutaSolicitada . ".php";
+                            } else {
+                                include "vistas/modulos/" . $rutaSolicitada . ".php";
+                            }
                         }
                     } else {
                         include "vistas/modulos/inicio.php";
